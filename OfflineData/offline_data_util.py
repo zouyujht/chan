@@ -15,7 +15,7 @@ from pathlib import Path
 # 添加项目根目录到路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from Common.CEnum import DATA_FIELD, KL_TYPE
+from Common.CEnum import DATA_FIELD, KL_TYPE, AUTYPE
 from Common.CTime import CTime
 from Common.func_util import str2float
 from KLine.KLine_Unit import CKLine_Unit
@@ -27,9 +27,9 @@ if not hasattr(CTime, '_to_str_original'):
     def to_str_patched(self, fmt=None):
         if fmt:
             # Assuming CTime has year, month, day attributes.
-            # The call in OfflineDataAPI implies it'sa date format.
+            # The call in OfflineDataAPI implies it's a date format.
             # Let's construct a datetime object and format it.
-            hour = getattr(self, 'hour', 0)
+            hour =getattr(self, 'hour', 0)
             minute = getattr(self, 'minute', 0)
             dt = datetime(self.year, self.month, self.day, hour, minute)
             return dt.strftime(fmt)
@@ -50,7 +50,7 @@ class OfflineDataUtil:
         self.config_path = config_path or self._get_default_config_path()
         self.config = self._load_config()
         self.logger = self._setup_logger()
-        
+
     def _get_default_config_path(self) -> str:
         """获取默认配置文件路径"""
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -163,13 +163,14 @@ class OfflineDataUtil:
         """获取数据库配置"""
         return self.config.get('DB', {})
     
-    def create_data_file_path(self, code: str, k_type: KL_TYPE, data_format: str = 'csv') -> str:
+    def create_data_file_path(self, code: str, k_type: KL_TYPE, autype: AUTYPE, data_format: str = 'csv') -> str:
         """
         创建数据文件路径
         
         Args:
             code: 股票代码
             k_type: K线类型
+            autype: 复权类型
             data_format: 数据格式 (csv, pickle, sqlite)
             
         Returns:
@@ -177,36 +178,30 @@ class OfflineDataUtil:
         """
         offline_path = self.get_offline_data_path()
         
-        # 根据K线类型创建子目录
+        # 根据K线类型和复权类型创建子目录
         k_type_name = k_type.name.lower().replace('k_', '')
-        type_dir = os.path.join(offline_path, k_type_name)
-        os.makedirs(type_dir, exist_ok=True)
+        autype_name = autype.name.lower()
+        _dir = os.path.join(offline_path, autype_name, k_type_name)
+        os.makedirs(_dir, exist_ok=True)
         
-        # 生成文件名
-        if data_format == 'csv':
-            filename = f"{code}_{k_type_name}.csv"
-        elif data_format == 'pickle':
-            filename = f"{code}_{k_type_name}.pkl"
-        elif data_format == 'sqlite':
-            filename = f"{code}_{k_type_name}.db"
-        else:
-            filename = f"{code}_{k_type_name}.{data_format}"
+        filename = f"{code}.{data_format}"
         
-        return os.path.join(type_dir, filename)
+        return os.path.join(_dir, filename)
     
-    def save_kline_data_csv(self, code: str, k_type: KL_TYPE, kline_data: List[CKLine_Unit]) -> str:
+    def save_kline_data_csv(self, code: str, k_type: KL_TYPE, autype: AUTYPE, kline_data: List[CKLine_Unit]) -> str:
         """
         保存K线数据为CSV格式
         
         Args:
             code: 股票代码
             k_type: K线类型
+            autype: 复权类型
             kline_data: K线数据列表
             
         Returns:
             保存的文件路径
         """
-        file_path = self.create_data_file_path(code, k_type, 'csv')
+        file_path = self.create_data_file_path(code, k_type, autype, 'csv')
         
         with open(file_path, 'w', encoding='utf-8') as f:
             # 写入表头
@@ -235,18 +230,19 @@ class OfflineDataUtil:
         self.logger.info(f"保存CSV数据: {file_path}, 共{len(kline_data)}条记录")
         return file_path
     
-    def load_kline_data_csv(self, code: str, k_type: KL_TYPE) -> List[CKLine_Unit]:
+    def load_kline_data_csv(self, code: str, k_type: KL_TYPE, autype: AUTYPE) -> List[CKLine_Unit]:
         """
         从CSV文件加载K线数据
         
         Args:
             code: 股票代码
             k_type: K线类型
+            autype: 复权类型
             
         Returns:
             K线数据列表
         """
-        file_path = self.create_data_file_path(code, k_type, 'csv')
+        file_path = self.create_data_file_path(code, k_type, autype, 'csv')
         
         if not os.path.exists(file_path):
             self.logger.warning(f"CSV文件不存在: {file_path}")
@@ -267,7 +263,7 @@ class OfflineDataUtil:
                             if len(time_str) == 10:  # YYYY-MM-DD or YYYY/MM/DD
                                 time_str = time_str.replace('/', '-')  # 规范化为 YYYY-MM-DD
                                 year, month, day = map(int, time_str.split('-'))
-                                time_obj = CTime(year, month, day, 0, 0)
+                                time_obj = CTime(year, month,day, 0, 0)
                             else:  # 其他格式
                                 time_obj = CTime.from_str(time_str)
                             
@@ -290,19 +286,20 @@ class OfflineDataUtil:
         self.logger.info(f"加载CSV数据: {file_path}, 共{len(kline_data)}条记录")
         return kline_data
     
-    def save_kline_data_pickle(self, code: str, k_type: KL_TYPE, kline_data: List[CKLine_Unit]) -> str:
+    def save_kline_datapickle(self, code: str, k_type: KL_TYPE, autype: AUTYPE, kline_data: List[CKLine_Unit]) -> str:
         """
         保存K线数据为Pickle格式
         
         Args:
             code: 股票代码
             k_type: K线类型
+            autype: 复权类型
             kline_data: K线数据列表
             
         Returns:
             保存的文件路径
         """
-        file_path = self.create_data_file_path(code, k_type, 'pickle')
+        file_path = self.create_data_file_path(code, k_type, autype, 'pickle')
         
         with open(file_path, 'wb') as f:
             pickle.dump(kline_data, f)
@@ -310,18 +307,19 @@ class OfflineDataUtil:
         self.logger.info(f"保存Pickle数据: {file_path}, 共{len(kline_data)}条记录")
         return file_path
     
-    def load_kline_data_pickle(self, code: str, k_type: KL_TYPE) -> List[CKLine_Unit]:
+    def load_kline_data_pickle(self, code: str, k_type: KL_TYPE, autype: AUTYPE) -> List[CKLine_Unit]:
         """
         从Pickle文件加载K线数据
         
         Args:
             code: 股票代码
             k_type: K线类型
+            autype: 复权类型
             
         Returns:
             K线数据列表
         """
-        file_path = self.create_data_file_path(code, k_type, 'pickle')
+        file_path = self.create_data_file_path(code, k_type, autype, 'pickle')
         
         if not os.path.exists(file_path):
             self.logger.warning(f"Pickle文件不存在: {file_path}")
@@ -337,22 +335,23 @@ class OfflineDataUtil:
             self.logger.error(f"加载Pickle数据失败: {file_path}, 错误: {e}")
             return []
     
-    def get_latest_data_time(self, code: str, k_type: KL_TYPE, data_format: str = 'csv') -> Optional[CTime]:
+    def get_latest_data_time(self, code: str, k_type: KL_TYPE, autype: AUTYPE, data_format: str = 'csv') -> Optional[CTime]:
         """
         获取最新数据的时间
         
         Args:
             code: 股票代码
             k_type: K线类型
+            autype: 复权类型
             data_format: 数据格式
             
         Returns:
             最新数据时间，如果没有数据返回None
         """
         if data_format == 'csv':
-            kline_data = self.load_kline_data_csv(code, k_type)
+            kline_data = self.load_kline_data_csv(code, k_type, autype)
         elif data_format == 'pickle':
-            kline_data = self.load_kline_data_pickle(code, k_type)
+            kline_data = self.load_kline_data_pickle(code, k_type, autype)
         else:
             self.logger.warning(f"不支持的数据格式: {data_format}")
             return None
@@ -361,7 +360,7 @@ class OfflineDataUtil:
             return kline_data[-1].time
         return None
     
-    def append_kline_data(self, code: str, k_type: KL_TYPE, new_data: List[CKLine_Unit], 
+    def append_kline_data(self,code: str, k_type: KL_TYPE, autype: AUTYPE, new_data: List[CKLine_Unit], 
                          data_format: str = 'csv') -> str:
         """
         追加K线数据
@@ -369,6 +368,7 @@ class OfflineDataUtil:
         Args:
             code: 股票代码
             k_type: K线类型
+            autype: 复权类型
             new_data: 新的K线数据
             data_format: 数据格式
             
@@ -376,9 +376,9 @@ class OfflineDataUtil:
             保存的文件路径
         """
         if data_format == 'csv':
-            existing_data = self.load_kline_data_csv(code, k_type)
+            existing_data = self.load_kline_data_csv(code, k_type, autype)
         elif data_format == 'pickle':
-            existing_data = self.load_kline_data_pickle(code, k_type)
+            existing_data = self.load_kline_data_pickle(code, k_type, autype)
         else:
             self.logger.warning(f"不支持的数据格式: {data_format}")
             return ""
@@ -386,8 +386,8 @@ class OfflineDataUtil:
         # 合并数据，去重
         all_data = existing_data + new_data
         
-        # 按时间排序并去重
         unique_data = {}
+        # 按时间排序并
         for kl_unit in all_data:
             time_key = kl_unit.time.to_str()
             unique_data[time_key] = kl_unit
@@ -396,9 +396,10 @@ class OfflineDataUtil:
         
         # 保存数据
         if data_format == 'csv':
-            return self.save_kline_data_csv(code, k_type, sorted_data)
+            return self.save_kline_data_csv(code, k_type, autype, sorted_data)
         elif data_format == 'pickle':
-            return self.save_kline_data_pickle(code, k_type, sorted_data)
+            return self.save_kline_data_pickle(code, k_type, autype, sorted_data)
+        return ""
     
     def get_stock_list(self) -> List[str]:
         """
@@ -413,11 +414,9 @@ class OfflineDataUtil:
         for root, dirs, files in os.walk(offline_path):
             for file in files:
                 if file.endswith('.csv') or file.endswith('.pkl'):
-                    # 从文件名提取股票代码
-                    name_parts = file.split('_')
-                    if len(name_parts) >= 2:
-                        code = name_parts[0]
-                        stock_codes.add(code)
+                    #从文件名提取股票代码
+                    code = file.split('.')[0]
+                    stock_codes.add(code)
         
         return sorted(list(stock_codes))
     
@@ -440,14 +439,40 @@ class OfflineDataUtil:
                     os.remove(file_path)
                     self.logger.info(f"删除旧日志文件: {file}")
     
-    def get_downloaded_stocks(self) -> List[str]:
+    def get_downloaded_stocks(self, autype: AUTYPE, stock_type: str = 'stock') -> List[str]:
         """
-        获取所有已下载的股票代码列表（递归扫描所有子目录）
-            
+        获取指定复权类型和品种的已下载代码列表
+
+        Args:
+            autype: 复权类型
+            stock_type: 'stock' 或 'reits'
+
         Returns:
-            股票代码列表
+            代码列表
         """
-        return self.get_stock_list()
+        offline_path = self.get_offline_data_path()
+        autype_name = autype.name.lower()
+        target_path = os.path.join(offline_path, autype_name)
+        
+        codes = set()
+        if not os.path.exists(target_path):
+            return[]
+
+        for k_type_dir in os.listdir(target_path):
+            full_k_type_path= os.path.join(target_path, k_type_dir)
+            if os.path.isdir(full_k_type_path):
+                for file in os.listdir(full_k_type_path):
+                    if file.endswith('.csv'):
+                        code = os.path.splitext(file)[0]
+                        is_reit = code.isdigit() and len(code) == 6
+                        is_stock = '.' in code
+
+                        if stock_type == 'reits' and is_reit:
+                            codes.add(code)
+                        elif stock_type == 'stock' and is_stock:
+                            codes.add(code)
+        
+        return sorted(list(codes))
     
     def get_data_statistics(self) -> Dict[str, Any]:
         """
@@ -469,21 +494,24 @@ class OfflineDataUtil:
         latest_time = 0
         
         for root, dirs, files in os.walk(offline_path):
+            # 从目录路径中提取k线和复权类型
+            relative_path = os.path.relpath(root, offline_path)
+            path_parts = relative_path.split(os.sep)
+            if len(path_parts) == 2:
+                k_type, autype = path_parts
+                stats['k_types'].add(k_type)
+
             for file in files:
                 if file.endswith('.csv') or file.endswith('.pkl'):
                     file_path = os.path.join(root, file)
                     stats['total_files'] += 1
                     stats['total_size_mb'] += os.path.getsize(file_path) / (1024 * 1024)
                     
-                    # 提取股票代码和K线类型
-                    name_parts = file.split('_')
-                    if len(name_parts) >= 2:
-                        code = name_parts[0]
-                        k_type = name_parts[1].split('.')[0]
-                        stock_codes.add(code)
-                        stats['k_types'].add(k_type)
+                    # 提取股票代码
+                    code = file.split('.')[0]
+                    stock_codes.add(code)
                     
-                    # 更新最新修改时间
+                    #更新最新修改时间
                     file_time = os.path.getmtime(file_path)
                     if file_time > latest_time:
                         latest_time = file_time

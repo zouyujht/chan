@@ -1,0 +1,35 @@
+# template_stock.py 配置文件
+
+# 股票代码
+code: "sz.002572"
+
+# 结束时间, null 表示最新
+end_time: null
+
+# 数据源
+data_src: "custom:OfflineDataAPI.CStockFileReader"
+
+# CChan 配置
+chan_config:
+  cal_demark: true
+
+# 绘图配置
+plot_config:
+  plot_kline: true
+  plot_bi: true
+  plot_seg: true
+  plot_zs: true
+  plot_bsp: true
+  plot_segbsp: true
+  plot_macd: false
+  plot_demark: true
+
+# 绘图参数 (默认为空)
+plot_para: {}
+
+# 要处理的K线级别列表
+# 可选值: K_MON, K_WEEK, K_DAY, K_60M, K_30M, K_15M, K_5M, K_1M
+levels:
+  - K_MON
+  - K_WEEK
+  - K_DAY

@@ -111,20 +111,21 @@ class BaoStockUpdater:
         self.logger.warning(f"无法为代码 {code} 确定交易所前缀，可能是一个无效的代码。")
         return code
     
-    def get_update_date_range(self, code: str, k_type: KL_TYPE) -> Tuple[Optional[str], str]:
+    def get_update_date_range(self, code: str, k_type: KL_TYPE, autype: AUTYPE) -> Tuple[Optional[str], str]:
         """
         获取需要更新的日期范围
         
         Args:
             code: 股票代码
             k_type: K线类型
+            autype: 复权类型
             
         Returns:
             (开始日期, 结束日期) 元组
         """
         try:
             # 获取现有数据的最新时间
-            latest_time = self.util.get_latest_data_time(code, k_type)
+            latest_time = self.util.get_latest_data_time(code, k_type, autype)
             end_date = datetime.now().strftime("%Y-%m-%d")
             
             if latest_time:
@@ -168,14 +169,14 @@ class BaoStockUpdater:
         try:
             if force_full_update:
                 # 强制全量更新，删除现有数据
-                self.util.delete_kline_data(code, k_type)
+                self.util.delete_kline_data(code, k_type, autype)
                 start_date = (datetime.now() - timedelta(days=365*5)).strftime("%Y-%m-%d")  # 5年数据
                 end_date = datetime.now().strftime("%Y-%m-%d")
             else:
                 # 增量更新
-                start_date, end_date = self.get_update_date_range(code, k_type)
+                start_date, end_date = self.get_update_date_range(code, k_type, autype)
                 if start_date is None:
-                    self.logger.info(f"股票 {code} {k_type.name} 数据已是最新，跳过更新")
+                    self.logger.info(f"股票 {code} {k_type.name}{autype.name} 数据已是最新，跳过更新")
                     self.update_stats['skipped_count'] += 1
                     return True
             
@@ -198,16 +199,16 @@ class BaoStockUpdater:
             
             if force_full_update:
                 # 全量更新，直接保存
-                self.util.save_kline_data_csv(code, k_type, new_data)
+                self.util.save_kline_data_csv(code, k_type, autype, new_data)
                 self.update_stats['updated_count'] += 1
                 self.update_stats['new_records'] += len(new_data)
-                self.logger.info(f"全量更新 {code} {k_type.name}，共{len(new_data)}条记录")
+                self.logger.info(f"全量更新 {code} {k_type.name} {autype.name}，共{len(new_data)}条记录")
             else:
                 # 增量更新，追加数据
-                self.util.append_kline_data(code, k_type, new_data)
+                self.util.append_kline_data(code, k_type, autype, new_data)
                 self.update_stats['updated_count'] += 1
                 self.update_stats['new_records'] += len(new_data)
-                self.logger.info(f"增量更新 {code} {k_type.name}，新增{len(new_data)}条记录")
+                self.logger.info(f"增量更新 {code} {k_type.name} {autype.name}，新增{len(new_data)}条记录")
             
             self.update_stats['success_count'] += 1
             return True
@@ -317,6 +318,7 @@ class BaoStockUpdater:
         return self.update_stats
     
     def update_all_downloaded_stocks(self, k_types: Optional[List[KL_TYPE]] = None,
+                                   autype: AUTYPE = AUTYPE.QFQ,
                                    force_full_update: bool = False,
                                    max_workers: int = 3) -> Dict[str, Any]:
         """
@@ -324,6 +326,7 @@ class BaoStockUpdater:
         
         Args:
             k_types: K线类型列表
+            autype: 复权类型
             force_full_update: 是否强制全量更新
             max_workers: 最大并发数
             
@@ -331,17 +334,18 @@ class BaoStockUpdater:
             更新统计信息
         """
         # 获取已下载的股票列表
-        downloaded_stocks = self.util.get_downloaded_stocks()
+        downloaded_stocks = self.util.get_downloaded_stocks(autype)
         
         if not downloaded_stocks:
-            self.logger.warning("没有找到已下载的股票数据")
+            self.logger.warning(f"没有找到已下载的 {autype.name} 类型的股票数据")
             return self.update_stats
         
-        self.logger.info(f"找到{len(downloaded_stocks)}只已下载的股票")
+        self.logger.info(f"找到{len(downloaded_stocks)}只已下载的 {autype.name} 类型的股票")
         
         return self.update_stock_list(
             stock_codes=downloaded_stocks,
             k_types=k_types,
+            autype=autype,
             force_full_update=force_full_update,
             max_workers=max_workers
         )
@@ -398,7 +402,8 @@ class BaoStockUpdater:
         except KeyboardInterrupt:
             self.logger.info("定时更新任务已停止")
     
-    def repair_data(self, code: str, k_type: KL_TYPE, 
+    def repair_data(self, code: str, k_type: KL_TYPE,
+                   autype: AUTYPE = AUTYPE.QFQ,
                    check_days: int = 30) -> bool:
         """
         修复数据缺失
@@ -406,16 +411,16 @@ class BaoStockUpdater:
         Args:
             code: 股票代码
             k_type: K线类型
+            autype: 复权类型
             check_days: 检查最近多少天的数据
             
         Returns:
             修复是否成功
         """
         try:
-            # 检查数据完整性
-            existing_data = self.util.load_kline_data_csv(code, k_type)
+            # 检查数据完整性    existing_data = self.util.load_kline_data_csv(code, k_type, autype)
             if not existing_data:
-                self.logger.warning(f"股票 {code} {k_type.name} 没有现有数据")
+                self.logger.warning(f"股票 {code} {k_type.name} {autype.name} 没有现有数据")
                 return False
             
             # 检查最近数据是否有缺失
@@ -449,6 +454,7 @@ def main():
     """主函数"""
     parser = argparse.ArgumentParser(description='BaoStock增量数据更新器')
     parser.add_argument('--config', type=str, help='配置文件路径')
+    parser.add_argument('--autype', type=str, default='qfq', help='复权类型 (qfq, hfq, none)')
     parser.add_argument('--k-types', type=str, default='day,week,mon', 
                        help='K线类型，逗号分隔 (day,week,mon,5m,15m,30m,60m)')
     parser.add_argument('--codes', type=str, help='指定股票代码，逗号分隔')
@@ -483,6 +489,10 @@ def main():
     
     if not k_types:
         k_types = [KL_TYPE.K_DAY]
+
+    # 解析复权类型
+    autype_map = {'qfq': AUTYPE.QFQ, 'hfq': AUTYPE.HFQ, 'none': AUTYPE.NONE}
+    autype = autype_map.get(args.autype.lower(), AUTYPE.QFQ)
     
     # 创建更新器
     updater = BaoStockUpdater(args.config)
@@ -497,6 +507,7 @@ def main():
             stats = updater.update_stock_list(
                 stock_codes=stock_codes,
                 k_types=k_types,
+                autype=autype,
                 force_full_update=args.force_full,
                 max_workers=args.max_workers,
                 delay_seconds=args.delay
@@ -506,14 +517,16 @@ def main():
             stats = updater.update_by_file(
                 file_path=args.codes_file,
                 k_types=k_types,
+                autype=autype,
                 force_full_update=args.force_full,
                 max_workers=args.max_workers,
-                delay_seconds=args.delay
+                delayseconds=args.delay
             )
         elif args.all:
             # 更新所有已下载的股票
             stats = updater.update_all_downloaded_stocks(
                 k_types=k_types,
+                autype=autype,
                 force_full_update=args.force_full,
                 max_workers=args.max_workers
             )

@@ -42,9 +42,9 @@ class CStockFileReader(CCommonStockApi):
             CKLine_Unit: 代表单根K线数据的对象。
         """
         # 优先使用速度更快的Pickle格式，如果不存在则回退到CSV
-        kline_data = self.util.load_kline_data_pickle(self.code, self.k_type)
+        kline_data = self.util.load_kline_data_pickle(self.code, self.k_type, self.autype)
         if not kline_data:
-            kline_data = self.util.load_kline_data_csv(self.code, self.k_type)
+            kline_data = self.util.load_kline_data_csv(self.code, self.k_type, self.autype)
 
         for kline in kline_data:
             # 确保时间可以与begin_date/end_date字符串进行比较

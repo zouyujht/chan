@@ -232,9 +232,9 @@ end_date: 结束日期
         """
         # 检查是否已存在数据
         if not force_update:
-            file_path = self.util.create_data_file_path(code, k_type, 'csv')
+            file_path = self.util.create_data_file_path(code, k_type, autype, 'csv')
             if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-                self.logger.info(f"股票 {code} {k_type.name} 数据已存在，跳过下载")
+                self.logger.info(f"股票 {code} {k_type.name} {autype.name} 数据已存在，跳过下载")
                 self.download_stats['skipped_count'] += 1
                 return True
 
@@ -258,7 +258,7 @@ end_date: 结束日期
                     return False  # 如果没有数据，则不重试
 
                 # 保存数据
-                self.util.save_kline_data_csv(code, k_type, kline_data)
+                self.util.save_kline_data_csv(code, k_type, autype, kline_data)
 
                 self.download_stats['success_count'] += 1
                 self.download_stats['total_records'] += len(kline_data)
@@ -384,6 +384,7 @@ end_date: 结束日期
     def download_all_stocks(self, k_types: Optional[List[KL_TYPE]] = None,
                           start_date: Optional[str] = None,
                           end_date: Optional[str] = None,
+                          autype: AUTYPE = AUTYPE.QFQ,
                           include_index: bool = True,
                           force_update: bool = False,
                           max_workers: int = 5) -> Dict[str, Any]:
@@ -417,6 +418,7 @@ end_date: 结束日期
             k_types=k_types,
             start_date=start_date,
             end_date=end_date,
+            autype=autype,
             force_update=force_update,
             max_workers=max_workers
         )
@@ -452,6 +454,7 @@ def main():
     parser.add_argument('--end-date', type=str, help='结束日期 (YYYY-MM-DD)')
     parser.add_argument('--k-types', type=str, default='day,week,mon', 
                        help='K线类型，逗号分隔 (day,week,mon,5m,15m,30m,60m)')
+    parser.add_argument('--autype', type=str, default='qfq', help='复权类型 (qfq, hfq, none)')
     parser.add_argument('--codes', type=str, help='指定股票代码，逗号分隔')
     parser.add_argument('--codes-file', type=str, help='股票代码文件路径')
     parser.add_argument('--include-index', action='store_true', help='包含指数数据')
@@ -482,6 +485,14 @@ def main():
     
     if not k_types:
         k_types = [KL_TYPE.K_DAY]
+
+    # 解析复权类型
+    autype_map = {
+        'qfq': AUTYPE.QFQ,
+        'hfq': AUTYPE.HFQ,
+        'none': AUTYPE.NONE,
+    }
+    autype = autype_map.get(args.autype.lower(), AUTYPE.QFQ)
     
     # 创建下载器
     downloader = BaoStockDownloader(args.config)
@@ -497,6 +508,7 @@ def main():
                 k_types=k_types,
                 start_date=args.start_date,
                 end_date=end_date,
+                autype=autype,
                 force_update=args.force_update,
                 max_workers=args.max_workers,
                 delay_seconds=args.delay
@@ -508,9 +520,9 @@ def main():
                 k_types=k_types,
                 start_date=args.start_date,
                 end_date=end_date,
+                autype=autype,
                 force_update=args.force_update,
-                max_workers=args.max_workers,
-                delay_seconds=args.delay
+                max_workers=args.max_workers, delay_seconds=args.delay
             )
         else:
             # 下载所有股票
@@ -518,6 +530,7 @@ def main():
                 k_types=k_types,
                 start_date=args.start_date,
                 end_date=end_date,
+                autype=autype,
                 include_index=args.include_index,
                 force_update=args.force_update,
                 max_workers=args.max_workers
