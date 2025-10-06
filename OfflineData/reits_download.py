@@ -284,7 +284,9 @@ def main():
 
     try:
         if args.codes:
-            reits_codes = [code.strip() for code in args.codes.split(',')]
+            # 去除可能存在的引号，并按逗号分割
+            cleaned_codes = args.codes.replace('"', '').replace("'", "")
+            reits_codes = [code.strip() for code in cleaned_codes.split(',')]
             stats = downloader.download_reits_list(reits_codes=reits_codes, **common_args)
         else:
             stats = downloader.download_all_reits(**common_args)

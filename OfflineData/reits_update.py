@@ -38,8 +38,8 @@ class AkshareReitsUpdater:
         self.logger = self.util.logger
 
         # 默认更新参数
-        self.default_k_types = [KL_TYPE.K_DAY, KL_TYPE.K_WEEK, KL_TYPE.K_MON]
-        self.default_autype = AUTYPE.QFQ
+        self.default_k_types = [KL_TYPE.K_DAY] # REITs 只有日线
+        self.default_autype = AUTYPE.NONE # REITs 只有不复权
         self.update_days = 60  # 默认更新最近60天的数据
 
         # 更新统计
@@ -182,20 +182,24 @@ class AkshareReitsUpdater:
             self.logger.info(f"{key}: {value if isinstance(value, int) else len(value)}")
         return self.update_stats
 
-    def update_all_downloaded_reits(self, autype: AUTYPE = AUTYPE.QFQ, **kwargs) -> Dict[str, Any]:
+    def update_all_downloaded_reits(self, **kwargs) -> Dict[str, Any]:
         """
        更新所有已下载的REITS数据
         """
-        all_codes = self.util.get_downloaded_stocks(autype=autype, stock_type='reits')
-        self.logger.info(f"检测到 {len(all_codes)} 个已下载的REITS ({autype.name})")
-        return self.update_reits_list(all_codes, autype=autype, **kwargs)
+        # REITs 只有不复权数据, 忽略传入的autype
+        storage_autype= AUTYPE.NONE
+        all_codes = self.util.get_downloaded_stocks(autype=storage_autype, stock_type='reits')
+        self.logger.info(f"检测到 {len(all_codes)} 个已下载的REITS ({storage_autype.name})")
+        kwargs['autype'] = storage_autype # 确保后续流程使用正确的autype
+        return self.update_reits_list(all_codes, **kwargs)
 
 
 def main():
     parser = argparse.ArgumentParser(description='Akshare REITS增量数据更新器')
     parser.add_argument('--config', type=str, help='配置文件路径')
-    parser.add_argument('--autype', type=str, default='qfq', help='复权类型 (qfq, hfq, none)')
-    parser.add_argument('--k-types', type=str, default='day,week,mon', help='K线类型 (day,week,mon)')
+    # REITs只有不复权(none)和日线(day)数据，因此移除相关参数，或设为固定值
+    parser.add_argument('--autype', type=str, default='none', help='复权类型 (固定为none)')
+    parser.add_argument('--k-types', type=str, default='day', help='K线类型 (固定为day)')
     parser.add_argument('--codes', type=str, help='指定REIT代码，逗号分隔')
     parser.add_argument('--all', action='store_true', help='更新所有已下载的REITS')
     parser.add_argument('--force-full', action='store_true', help='强制全量更新')
