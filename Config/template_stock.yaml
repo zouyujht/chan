@@ -11,6 +11,8 @@ data_src: "custom:OfflineDataAPI.CStockFileReader"
 
 # CChan 配置
 chan_config:
+  divergence_rate: 0.9
+  max_bs2_rate: 0.618
   cal_demark: true
 
 # 绘图配置

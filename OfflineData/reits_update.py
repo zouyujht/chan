@@ -122,15 +122,21 @@ class AkshareReitsUpdater:
 
             new_data = []
             for _, row in new_data_df.iterrows():
+                # 解析日期字符串 (格式: YYYY-MM-DD)
+                date_str = row['日期']
+                year = int(date_str[:4])
+                month = int(date_str[5:7])
+                day = int(date_str[8:10])
+                
                 item_dict = {
-                    DATA_FIELD.FIELD_TIME: CTime.from_str(row['日期']),
-                    DATA_FIELD.FIELD_OPEN: row['开盘'],
+                    DATA_FIELD.FIELD_TIME: CTime(year, month, day, 0, 0),
+                    DATA_FIELD.FIELD_OPEN: row['今开'],
                     DATA_FIELD.FIELD_HIGH: row['最高'],
                     DATA_FIELD.FIELD_LOW: row['最低'],
-                    DATA_FIELD.FIELD_CLOSE: row['收盘'],
+                    DATA_FIELD.FIELD_CLOSE: row['最新价'],
                     DATA_FIELD.FIELD_VOLUME: row['成交量'],
                     DATA_FIELD.FIELD_TURNOVER: row['成交额'],
-                    DATA_FIELD.FIELD_TURNRATE: row.get('换手率', 0.0)
+                    DATA_FIELD.FIELD_TURNRATE: row.get('换手', 0.0)
                 }
                 new_data.append(CKLine_Unit(item_dict))
 
@@ -139,7 +145,7 @@ class AkshareReitsUpdater:
                 log_msg = f"全量更新 {code} {k_type.name} ({storage_autype.name})，共{len(new_data)}条记录"
             else:
                 self.util.append_kline_data(code, k_type, storage_autype, new_data)
-                log_msg = f"增量更新 {code} {ktype.name} ({storage_autype.name})，新增{len(new_data)}条记录"
+                log_msg = f"增量更新 {code} {k_type.name} ({storage_autype.name})，新增{len(new_data)}条记录"
 
             self.update_stats['updated_count'] += 1
             self.update_stats['new_records'] += len(new_data)

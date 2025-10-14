@@ -47,8 +47,8 @@ data/
 # 这是最常用的初始数据准备命令
 python OfflineData/bao_download.py --include-index --autype qfq
 
-# 下载指定股票的日线数据（后复权）
-python OfflineData/bao_download.py --codes "sh.600519,sz.000001" --k-types day --autype hfq
+# 下载指定股票的日周月线数据（前复权）
+python OfflineData/bao_download.py --codes 002327 --autype qfq
 
 # 从文件读取股票列表进行下载（不复权）
 pythonOfflineData/bao_download.py --codes-file my_stocks.txt --autype none
@@ -91,3 +91,11 @@ python OfflineData/reits_update.py --all --autype qfq
 
 # 强制对指定的REITs进行全量更新
 python OfflineData/reits_update.py --codes "508001" --force-full --autype qfq
+
+
+
+ chan_env\Scripts\activate
+ python OfflineData/bao_update.py --all --autype qfq
+ python OfflineData/reits_update.py --all
+
+ python .\template_stock.py

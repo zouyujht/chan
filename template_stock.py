@@ -105,20 +105,40 @@ if __name__ == "__main__":
         'K_1M': (now - timedelta(days=1)).strftime('%Y-%m-%d'),     # Last 1 day
     }
 
+    # 数据获取时间范围（所有级别都读取全部数据进行计算）
+    data_begin_time = None  # None表示读取全部可用数据
+
     for lv_str in levels_to_process:
         lv = KL_TYPE[lv_str]
-        begin_time = level_start_times.get(lv_str)
+        plot_begin_time = level_start_times.get(lv_str)  # 每个级别使用不同的绘图时间范围
         
         print(f"\n正在处理 {code} 的 {lv.name} 数据...")
+
         chan = CChan(
             code=code,
-            begin_time=begin_time,
+            begin_time=data_begin_time,  # None表示读取全部可用数据
             end_time=end_time,
             data_src=data_src,
             lv_list=[lv],
             config=chanconfig,
             autype=AUTYPE.QFQ,
         )
+
+        # 设置绘图的时间范围（只影响显示，不影响计算）
+        if plot_begin_time is not None:
+            # 将plot_begin_time转换为PlotDriver支持的格式 "YYYY/MM/DD"
+            plot_begin_date = plot_begin_time.replace('-', '/')
+            
+            # 确保plot_para中有figure配置
+            if "figure" not in plot_para:
+                plot_para["figure"] = {}
+            
+            # 更新plot_para中的figure配置，设置绘图开始日期
+            plot_para["figure"]["x_begin_date"] = plot_begin_date
+        else:
+            # 如果plot_begin_time为None，则显示所有数据，清除x_begin_date设置
+            if "figure" in plot_para and "x_begin_date" in plot_para["figure"]:
+                del plot_para["figure"]["x_begin_date"]
 
         plot_driver= CPlotDriver(
             chan,
@@ -129,5 +149,29 @@ if __name__ == "__main__":
         mng = plot_driver.figure.canvas.manager
         mng.window.state('zoomed')
         plot_driver.figure.show()
+
+        # 打印统计信息对比
+        from Common.CTime import CTime
+        if plot_begin_time is not None:
+            year, month, day = map(int, plot_begin_time.split('-'))
+            plot_begin_time_obj = CTime(year, month, day, 0, 0)
+            plot_start_idx = 0
+            for i, klc in enumerate(chan[0].lst):
+                if klc.time_begin >= plot_begin_time_obj:
+                    plot_start_idx = i
+                    break
+            
+            print(f"\n数据获取时间范围: 全部可用数据")
+            print(f"绘图显示时间范围: {plot_begin_time} 到最新")
+            print(f"总K线数量: {len(chan[0].lst)}")
+            print(f"显示K线数量: {len(chan[0].lst) - plot_start_idx}")
+        else:
+            print(f"\n数据获取时间范围: 全部可用数据")
+            print(f"绘图显示时间范围: 全部数据")
+            print(f"总K线数量: {len(chan[0].lst)}")
+            print(f"显示K线数量: {len(chan[0].lst)}")
+        
+        print(f"中枢数量: {len(chan[0].zs_list)}")
+        print(f"买卖点数量: {len(chan.get_bsp())}")
 
     input("按回车键退出...")

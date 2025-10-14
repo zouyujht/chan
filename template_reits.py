@@ -106,19 +106,33 @@ if __name__ == "__main__":
     plot_para = config_data['plot_para']
 
     print(f"\nProcessing daily data for REIT: {selected_code}...")
-    # Set begin_time to one year ago for daily data
+    # 数据获取和绘图范围分离
     now = datetime.now()
-    begin_time = (now - timedelta(days=365)).strftime('%Y-%m-%d')
+    # 数据获取：使用更早的开始时间确保完整的缠论计算（3年数据）
+    data_begin_time = (now - timedelta(days=3*365)).strftime('%Y-%m-%d')
+    # 绘图显示：使用一年前的时间（用户关心的时间段）
+    plot_begin_time = (now - timedelta(days=365)).strftime('%Y-%m-%d')
 
     chan = CChan(
         code=selected_code,
-        begin_time=begin_time,
+        begin_time=data_begin_time,  # 数据获取用更早的时间
         end_time=None,
         data_src=data_src,
         lv_list=[KL_TYPE.K_DAY],  # Only process daily data for REITs
         config=chanconfig,
         autype=AUTYPE.NONE, # Use non-adjusted data
     )
+
+    # 设置绘图的时间范围（只影响显示，不影响计算）
+    # 将plot_begin_time转换为PlotDriver支持的格式 "YYYY/MM/DD"
+    plot_begin_date = plot_begin_time.replace('-', '/')
+    
+    # 确保plot_para中有figure配置
+    if "figure" not in plot_para:
+        plot_para["figure"] = {}
+    
+    # 更新plot_para中的figure配置，设置绘图开始日期
+    plot_para["figure"]["x_begin_date"] = plot_begin_date
 
     plot_driver = CPlotDriver(
         chan,
@@ -129,5 +143,22 @@ if __name__ == "__main__":
     mng = plot_driver.figure.canvas.manager
     mng.window.state('zoomed')
     plot_driver.figure.show()
+
+    # 打印统计信息对比
+    from Common.CTime import CTime
+    year, month, day = map(int, plot_begin_time.split('-'))
+    plot_begin_time_obj = CTime(year, month, day, 0, 0)
+    plot_start_idx = 0
+    for i, klc in enumerate(chan[0].lst):
+        if klc.time_begin >= plot_begin_time_obj:
+            plot_start_idx = i
+            break
+    
+    print(f"\n数据获取时间范围: {data_begin_time} 到最新")
+    print(f"绘图显示时间范围: {plot_begin_time} 到最新")
+    print(f"总K线数量: {len(chan[0].lst)}")
+    print(f"显示K线数量: {len(chan[0].lst) - plot_start_idx}")
+    print(f"中枢数量: {len(chan[0].zs_list)}")
+    print(f"买卖点数量: {len(chan.get_bsp())}")
 
     input("Press Enter to exit...")
