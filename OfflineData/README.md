@@ -44,9 +44,7 @@ data/
 
 ```bash
 # 下载所有A股和指数的日线、周线、月线数据（前复权）
-# 这是最常用的初始数据准备命令
-python OfflineData/bao_download.py --include-index --autype qfq
-
+初始数据准
 # 下载指定股票的日周月线数据（前复权）
 python OfflineData/bao_download.py --codes 002327 --autype qfq
 
@@ -76,8 +74,8 @@ python OfflineData/bao_update.py --all --force-full --autype qfq
 #### 数据下载 (`reits_download.py`)
 
 ```bash
-# 下载所有公募REITs的日线、周线、月线数据（前复权）
-python OfflineData/reits_download.py --autype qfq
+# 下载所有公募REITs的日线
+python OfflineData/reits_download.py --autype none
 
 # 下载指定REITs的日线数据（后复权）
 python OfflineData/reits_download.py --codes "508097,180101" --k-types day week mon --autype none
@@ -85,17 +83,21 @@ python OfflineData/reits_download.py --codes "508097,180101" --k-types day week 
 
 #### 数据更新 (`reits_update.py`)
 
-```bash
-# 增量更新所有已下载的前复权REITs数据
+##### 增量更新所有已下载的前复权REITs数据
 python OfflineData/reits_update.py --all --autype qfq
 
-# 强制对指定的REITs进行全量更新
+###### 强制对指定的REITs进行全量更新
 python OfflineData/reits_update.py --codes "508001" --force-full --autype qfq
 
 
-
+### 最常用命令
  chan_env\Scripts\activate
+ python OfflineData/bao_download.py --codes 002327 --autype qfq 
+ python OfflineData/bond_download_offline.py --codes 019547
+
  python OfflineData/bao_update.py --all --autype qfq
  python OfflineData/reits_update.py --all
+ python OfflineData/bond_update.py --codes 019547
 
+ 数据查看
  python .\template_stock.py

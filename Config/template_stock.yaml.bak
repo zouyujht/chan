@@ -11,24 +11,8 @@ data_src: "custom:OfflineDataAPI.CStockFileReader"
 
 # CChan 配置
 chan_config:
-  # 用户指定参数
-  divergence_rate: 1
-  min_zs_cnt: 1
-  bs1_peak: false
-  bs_type: "1,1p,2,2s,3a,3b"  # 为满足“全部显示”要求，补充 3b
-  max_bs2_rate: 0.7
-
-  # 稳健版默认参数（未明确给出但有助于提升胜率与信号质量）
-  macd_algo: "peak"           # 笔级力度用峰值
-  macd_algo-seg: "slope"      # 线段级力度用斜率
-  bsp1_only_multibi_zs: true
-  bsp1_only_multibi_zs-seg: false
-  bsp2_follow_1: true
-  bsp2s_follow_2: true
-  max_bsp2s_lv: null
-  bsp3_follow_1: true
-  strict_bsp3: false
-  bsp3_peak: false
+  divergence_rate: 0.9
+  max_bs2_rate: 0.618
   cal_demark: true
 
 # 绘图配置

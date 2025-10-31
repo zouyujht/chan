@@ -464,12 +464,18 @@ class OfflineDataUtil:
                 for file in os.listdir(full_k_type_path):
                     if file.endswith('.csv'):
                         code = os.path.splitext(file)[0]
-                        is_reit = code.isdigit() and len(code) == 6
+                        # 股票代码通常包含交易所前缀，如 "sz.000001" 或 "sh.600000"
                         is_stock = '.' in code
+                        # 国债代码通常为 6 位纯数字且以 "01" 开头，例如 019547
+                        is_bond = code.isdigit() and len(code) == 6 and code.startswith('01')
+                        # REITs（粗略分类）：6 位纯数字但不以 "01" 开头，避免与国债混淆
+                        is_reit = code.isdigit() and len(code) == 6 and not code.startswith('01')
 
                         if stock_type == 'reits' and is_reit:
                             codes.add(code)
                         elif stock_type == 'stock' and is_stock:
+                            codes.add(code)
+                        elif stock_type == 'bond' and is_bond:
                             codes.add(code)
         
         return sorted(list(codes))

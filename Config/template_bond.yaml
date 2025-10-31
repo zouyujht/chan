@@ -1,15 +1,9 @@
-# template_stock.py 配置文件
+# template_bond.py 配置文件
 
-# 股票代码
-code: "sz.002572"
-
-# 结束时间, null 表示最新
-end_time: null
-
-# 数据源
+# 数据源（债券使用离线数据读取器）
 data_src: "custom:OfflineDataAPI.CStockFileReader"
 
-# CChan 配置
+# CChan 配置（结合用户参数 + 稳健版默认）
 chan_config:
   # 用户指定参数
   divergence_rate: 1
@@ -18,9 +12,9 @@ chan_config:
   bs_type: "1,1p,2,2s,3a,3b"  # 为满足“全部显示”要求，补充 3b
   max_bs2_rate: 0.7
 
-  # 稳健版默认参数（未明确给出但有助于提升胜率与信号质量）
-  macd_algo: "peak"           # 笔级力度用峰值
-  macd_algo-seg: "slope"      # 线段级力度用斜率
+  # 稳健版默认参数
+  macd_algo: "peak"
+  macd_algo-seg: "slope"
   bsp1_only_multibi_zs: true
   bsp1_only_multibi_zs-seg: false
   bsp2_follow_1: true
@@ -31,7 +25,7 @@ chan_config:
   bsp3_peak: false
   cal_demark: true
 
-# 绘图配置
+# 绘图配置（只绘制日线图表）
 plot_config:
   plot_kline: true
   plot_bi: true
@@ -42,12 +36,5 @@ plot_config:
   plot_macd: false
   plot_demark: true
 
-# 绘图参数 (默认为空)
+# 绘图参数（默认为空，可在运行时设置 x_begin_date）
 plot_para: {}
-
-# 要处理的K线级别列表
-# 可选值: K_MON, K_WEEK, K_DAY, K_60M, K_30M, K_15M, K_5M, K_1M
-levels:
-  - K_MON
-  - K_WEEK
-  - K_DAY
