@@ -94,10 +94,14 @@ python OfflineData/reits_update.py --codes "508001" --force-full --autype qfq
  chan_env\Scripts\activate
  python OfflineData/bao_download.py --codes 002327 --autype qfq 
  python OfflineData/bond_download_offline.py --codes 019547
+python OfflineData/reits_download.py --codes 180202  
+
 
  python OfflineData/bao_update.py --all --autype qfq
  python OfflineData/reits_update.py --all
  python OfflineData/bond_update.py --codes 019547
 
  数据查看
- python .\template_stock.py
+ python .\template_stock.py 
+ python .\template_reits.py
+ python .\template_bond.py

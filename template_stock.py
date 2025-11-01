@@ -155,6 +155,30 @@ if __name__ == "__main__":
             mng.window.state('zoomed')
             plot_driver.figure.show()
 
+            # 如果是日线级别，额外绘制：全历史日线缠论分析（不绘制K线与Demark，其余保持一致）
+            if lv == KL_TYPE.K_DAY:
+                plot_para_full = copy.deepcopy(plot_para)
+                # 移除绘图开始日期，显示全部数据
+                if "figure" in plot_para_full and "x_begin_date" in plot_para_full["figure"]:
+                    del plot_para_full["figure"]["x_begin_date"]
+
+                # 在原绘图配置基础上禁用K线与Demark
+                plot_config_full = copy.deepcopy(plot_config)
+                # 兼容未添加前缀的情况
+                for key in ("plot_kline", "kline"):
+                    plot_config_full[key] = False
+                for key in ("plot_demark", "demark"):
+                    plot_config_full[key] = False
+
+                plot_driver_full = CPlotDriver(
+                    chan,
+                    plot_config=plot_config_full,
+                    plot_para=plot_para_full,
+                )
+                mng_full = plot_driver_full.figure.canvas.manager
+                mng_full.window.state('zoomed')
+                plot_driver_full.figure.show()
+
             # 打印统计信息对比
             from Common.CTime import CTime
             if plot_begin_time is not None:

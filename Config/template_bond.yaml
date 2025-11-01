@@ -6,7 +6,7 @@ data_src: "custom:OfflineDataAPI.CStockFileReader"
 # CChan 配置（结合用户参数 + 稳健版默认）
 chan_config:
   # 用户指定参数
-  divergence_rate: 1
+  #divergence_rate: 1
   min_zs_cnt: 1
   bs1_peak: false
   bs_type: "1,1p,2,2s,3a,3b"  # 为满足“全部显示”要求，补充 3b
@@ -33,7 +33,7 @@ plot_config:
   plot_zs: true
   plot_bsp: true
   plot_segbsp: true
-  plot_macd: false
+  plot_macd: true
   plot_demark: true
 
 # 绘图参数（默认为空，可在运行时设置 x_begin_date）
